@@ -10,6 +10,7 @@ import { ScrollArea } from '@/components/ui/scroll-area';
 import { CartItem } from './MOWAAForm';
 import { useBooking } from '@/hooks/BookingContext';
 import { api } from '@/lib/api';
+const PAYSTACK_PUBLIC_KEY = import.meta.env.VITE_PAYSTACK_PUBLIC_KEY;
 
 interface CartSidebarProps {
   isOpen: boolean;
@@ -66,45 +67,129 @@ export const CartSidebar: React.FC<CartSidebarProps> = ({
   const totalAmount = items.reduce((sum, item) => sum + convertPrice(item.price, showUSD ? 'USD' : 'NGN'), 0);
 
   // Handle payment
+  // const handlePayment = async (currency: 'NGN' | 'USD') => {
+  //   try {
+  //     if (!exchangeRate) {
+  //       setError("Exchange rate not loaded. Please try again.");
+  //       return;
+  //     }
+
+  //     const normalizedFormData = {
+  //       ...formData,
+  //       services: Array.isArray(formData.services)
+  //         ? formData.services
+  //         : Object.values(formData.services),
+  //     };
+
+  //     // Convert all cart items to selected currency
+  //     const convertedCartItems = cartItems.map(item => ({
+  //       ...item,
+  //       price: convertPrice(item.price, currency),
+  //     }));
+
+  //     const totalAmountToSend = convertedCartItems.reduce((sum, item) => sum + item.price, 0);
+
+  //     const data = await api.initiatePayment({
+  //       formData: normalizedFormData,
+  //       cartItems: convertedCartItems,
+  //       totalAmount: totalAmountToSend,
+  //       currency,
+  //     });
+
+  //     if (data.url) {
+  //       window.location.href = data.url;
+  //     } else {
+  //       setError("Failed to start payment. Please try again.");
+  //     }
+  //   } catch (err) {
+  //     console.error("Payment error:", err);
+  //     setError("Payment request failed. Please check your connection.");
+  //   }
+  // };
+
   const handlePayment = async (currency: 'NGN' | 'USD') => {
-    try {
-      if (!exchangeRate) {
-        setError("Exchange rate not loaded. Please try again.");
-        return;
-      }
-
-      const normalizedFormData = {
-        ...formData,
-        services: Array.isArray(formData.services)
-          ? formData.services
-          : Object.values(formData.services),
-      };
-
-      // Convert all cart items to selected currency
-      const convertedCartItems = cartItems.map(item => ({
-        ...item,
-        price: convertPrice(item.price, currency),
-      }));
-
-      const totalAmountToSend = convertedCartItems.reduce((sum, item) => sum + item.price, 0);
-
-      const data = await api.initiatePayment({
-        formData: normalizedFormData,
-        cartItems: convertedCartItems,
-        totalAmount: totalAmountToSend,
-        currency,
-      });
-
-      if (data.url) {
-        window.location.href = data.url;
-      } else {
-        setError("Failed to start payment. Please try again.");
-      }
-    } catch (err) {
-      console.error("Payment error:", err);
-      setError("Payment request failed. Please check your connection.");
+  try {
+    if (!exchangeRate) {
+      setError("Exchange rate not loaded. Please try again.");
+      return;
     }
-  };
+
+    const normalizedFormData = {
+      ...formData,
+      services: Array.isArray(formData.services)
+        ? formData.services
+        : Object.values(formData.services),
+    };
+
+    const convertedCartItems = cartItems.map(item => ({
+      ...item,
+      price: convertPrice(item.price, currency),
+    }));
+
+    const totalAmountToSend = convertedCartItems.reduce((sum, item) => sum + item.price, 0);
+
+    // Initialize payment via backend
+    const data = await api.initiatePayment({
+      formData: normalizedFormData,
+      cartItems: convertedCartItems,
+      totalAmount: totalAmountToSend,
+      currency,
+    });
+
+    if (!data.reference) {
+      setError("Failed to start payment. Please try again.");
+      return;
+    }
+
+    // Launch Paystack modal
+    const handler = (window as any).PaystackPop.setup({
+      key: PAYSTACK_PUBLIC_KEY,
+      email: normalizedFormData.personalInfo.email,
+      amount: totalAmountToSend * 100, // in kobo
+      currency,
+      ref: data.reference,
+      metadata: { name: normalizedFormData.personalInfo.name },
+
+      onSuccess: async (transaction: any) => {
+        try {
+          const result = await api.verifyPayment(transaction.reference);
+          if (result.success) {
+            alert("Payment successful and verified! Confirmation email sent.");
+          } else {
+            alert("Payment succeeded but verification failed.");
+          }
+        } catch (err) {
+          console.error("Verification error:", err);
+          alert("Payment verification error.");
+        }
+      },
+
+      // ✅ User cancelled
+      onCancel: () => {
+        console.log("User cancelled payment");
+        alert("Payment cancelled.");
+      },
+
+      // ✅ Error loading modal
+      onError: (err: any) => {
+        console.error("Paystack error:", err.message);
+        setError(`Payment error: ${err.message}`);
+      },
+
+      // ✅ Optional elements mount (Apple Pay / Card detection)
+      onElementsMount: (elements: any) => {
+        if (elements) console.log("Elements mounted:", elements);
+        else console.log("Elements not supported");
+      },
+    });
+
+    handler.openIframe(); // Opens Paystack modal
+  } catch (err) {
+    console.error("Payment initialization failed:", err);
+    setError("Payment request failed. Please try again.");
+  }
+};
+
 
   if (!isOpen) return null;
 
