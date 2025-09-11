@@ -1,0 +1,311 @@
+import React, { useState } from 'react';
+import { Button } from '@/components/ui/button';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Badge } from '@/components/ui/badge';
+import { PersonalInfoSection } from './form-sections/PersonalInfoSection';
+import { TravelInfoSection } from './form-sections/TravelInfoSection';
+import { ServiceRequestSection } from './form-sections/ServiceRequestSection';
+import { HotelAccommodationSection } from './form-sections/HotelAccommodationSection';
+import { AdditionalInfoSection } from './form-sections/AdditionalInfoSection';
+import { FormProgress } from './FormProgress';
+import { CartSidebar } from './CartSidebar';
+import { useToast } from '@/hooks/use-toast';
+import { ShoppingCart, ArrowLeft, ArrowRight, Send } from 'lucide-react';
+import { useBooking } from '@/hooks/BookingContext';
+
+export interface CartItem {
+  id: string;
+  name: string;
+  price: number;
+  category: string;
+  details?: string;
+}
+
+export interface FormDatas {
+  personalInfo: {
+    name: string;
+    email: string;
+    phone: string;
+  };
+  travelInfo: {
+    arrivalDate: string;
+    airline: string;
+    flightNumber: string;
+    departureTime: string;
+    arrivalTime: string;
+    departureDate: string;
+    departureTimeFromLagos: string;
+  };
+  services: string[];
+  hotel: string;
+  roomType: string;
+  numberOfNights: string;
+  numberOfRooms: string;
+  stayInBenin: string;
+  beninDuration: string;
+  comments: string;
+}
+
+const sections = [
+  { id: 'personal', title: 'Personal Information', description: 'Your basic details' },
+  { id: 'travel', title: 'Travel Information', description: 'Flight and travel details' },
+  { id: 'services', title: 'Service Request', description: 'Select your services' },
+  { id: 'hotel', title: 'Hotel & Accommodation', description: 'Choose your stay' },
+  { id: 'additional', title: 'Additional Information', description: 'Final details' }
+];
+
+export const MOWAAForm: React.FC = () => {
+  const { formData, setFormData, cartItems, setCartItems } = useBooking();
+  const [currentSection, setCurrentSection] = useState(0);
+  const [isCartOpen, setIsCartOpen] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const { toast } = useToast();
+
+  const addToCart = (item: CartItem) => {
+    if (!item) return;
+    setCartItems(prev => {
+      const existingItem = prev.find(cartItem => cartItem.id === item.id);
+      if (existingItem) {
+        return prev.map(cartItem =>
+          cartItem.id === item.id
+            ? { ...cartItem, price: cartItem.price + item.price }
+            : cartItem
+        );
+      }
+      return [...prev, item];
+    });
+  };
+
+  const removeFromCart = (itemId: string) => {
+    setCartItems(prev => prev.filter(item => item.id !== itemId));
+  };
+
+  const updateFormData = (section: keyof FormDatas, data: any) => {
+    setFormData(prev => ({
+      ...prev,
+      [section]: typeof prev[section] === 'object' ? { ...prev[section], ...data } : data
+    }));
+  };
+
+const validateSection = () => {
+  switch (currentSection) {
+    case 0: // personal info
+      return formData.personalInfo.name && formData.personalInfo.email && formData.personalInfo.phone;
+    case 1: // travel info
+      return (
+        formData.travelInfo.arrivalDate &&
+        formData.travelInfo.departureDate &&
+        formData.travelInfo.airline &&
+        formData.travelInfo.flightNumber
+      );
+    default:
+      return true; // all other sections are considered valid
+  }
+};
+
+
+  const nextSection = () => {
+    if (!validateSection()) {
+      toast({
+        title: "Missing information",
+        description: "Please fill all required fields before proceeding.",
+        variant: "destructive",
+      });
+      return;
+    }
+    if (currentSection < sections.length - 1) {
+      setCurrentSection(currentSection + 1);
+    }
+  };
+
+  const handleFormSubmit = () => {
+    if (cartItems.length === 0) {
+      toast({
+        title: "Cart is empty",
+        description: "Please add at least one service or hotel option before proceeding.",
+        variant: "destructive",
+      });
+      return;
+    }
+    setIsCartOpen(true);
+  };
+
+  const prevSection = () => {
+    if (currentSection > 0) {
+      setCurrentSection(currentSection - 1);
+    }
+  };
+
+  const renderCurrentSection = () => {
+    switch (currentSection) {
+      case 0:
+        return (
+          <PersonalInfoSection
+            data={formData.personalInfo}
+            onUpdate={(data) => updateFormData('personalInfo', data)}
+          />
+        );
+      case 1:
+        return (
+          <TravelInfoSection
+            data={formData.travelInfo}
+            onUpdate={(data) => updateFormData('travelInfo', data)}
+          />
+        );
+      case 2:
+        return (
+          <ServiceRequestSection
+            data={formData.services}
+            onUpdate={(data) => updateFormData('services', data)}
+            onAddToCart={addToCart}
+          />
+        );
+      case 3:
+        return (
+          <HotelAccommodationSection
+            hotelData={formData.hotel}
+            roomTypeData={formData.roomType}
+            nightsData={formData.numberOfNights}
+            roomsData={formData.numberOfRooms}
+            onUpdate={updateFormData}
+            onAddToCart={addToCart}
+          />
+        );
+      case 4:
+        return (
+          <AdditionalInfoSection
+            stayInBenin={formData.stayInBenin}
+            beninDuration={formData.beninDuration}
+            comments={formData.comments}
+            onUpdate={updateFormData}
+          />
+        );
+      default:
+        return null;
+    }
+  };
+
+  return (
+    <div className="min-h-screen bg-background">
+      {/* Header */}
+      <div className="bg-gradient-hero text-white py-8">
+        <div className="container mx-auto px-4">
+          <div className="flex items-center justify-between">
+            <div>
+              <h1 className="text-3xl md:text-4xl font-bold mb-2">
+                MOWAA OPENING - NIGERIA VISIT
+              </h1>
+              <p className="text-lg opacity-90">November 2025</p>
+            </div>
+            <Button
+              variant="outline"
+              size="lg"
+              onClick={() => setIsCartOpen(true)}
+              className="bg-white/10 border-white/30 text-white hover:bg-white/20"
+            >
+              <ShoppingCart className="mr-2 h-5 w-5" />
+              Cart ({cartItems.length})
+            </Button>
+          </div>
+        </div>
+      </div>
+
+      <div className="container mx-auto px-4 py-8">
+        <div className="max-w-4xl mx-auto">
+          {/* Form Progress */}
+          <FormProgress currentSection={currentSection} sections={sections} />
+
+          {/* Welcome Message */}
+          <Card className="mb-8 shadow-elegant">
+            <CardContent className="p-6">
+              <p className="text-muted-foreground leading-relaxed">
+                As we draw nearer to your visit to Nigeria for MOWAA's opening in November, we would like you to provide us with the information requested via this form and also to proceed with making necessary payments which will only take about 15 minutes to enable us make relevant arrangements to ensure you have a smooth and seamless experience with your visit to Nigeria.
+              </p>
+              <div className="mt-4 p-4 bg-accent/10 rounded-lg">
+                <p className="text-sm text-foreground">
+                  <strong>IMPORTANT!</strong> Please note that any service or information not specified here can always be requested at{' '}
+                  <a href="mailto:logistics@wearemowaa.org" className="text-primary hover:underline">
+                    logistics@wearemowaa.org
+                  </a>{' '}
+                  for general logistics and{' '}
+                  <a href="mailto:visaenquiry@wearemowaa.org" className="text-primary hover:underline">
+                    visaenquiry@wearemowaa.org
+                  </a>{' '}
+                  for visa related matters.
+                </p>
+              </div>
+            </CardContent>
+          </Card>
+
+          {/* Current Section */}
+          <Card className="shadow-elegant">
+            <CardHeader className="bg-primary/5">
+              <div className="flex items-center justify-between">
+                <div>
+                  <CardTitle className="text-2xl text-primary">
+                    {sections[currentSection].title}
+                  </CardTitle>
+                  <p className="text-muted-foreground mt-1">
+                    {sections[currentSection].description}
+                  </p>
+                </div>
+                <Badge variant="secondary" className="text-sm">
+                  Section {currentSection + 1} of {sections.length}
+                </Badge>
+              </div>
+            </CardHeader>
+            <CardContent className="p-8">
+              {renderCurrentSection()}
+            </CardContent>
+          </Card>
+
+          {/* Navigation */}
+          <div className="flex justify-between mt-8">
+            <Button
+              variant="outline"
+              onClick={prevSection}
+              disabled={currentSection === 0}
+              className="flex items-center"
+            >
+              <ArrowLeft className="mr-2 h-4 w-4" />
+              Previous
+            </Button>
+            
+            {currentSection === sections.length - 1 ? (
+              <Button
+                onClick={handleFormSubmit}
+                disabled={isSubmitting || cartItems.length === 0}
+                className="flex items-center bg-gradient-primary hover:opacity-90"
+              >
+                <Send className="mr-2 h-4 w-4" />
+                Proceed to Cart & Pay
+              </Button>
+            ) : (
+              <Button
+                onClick={nextSection}
+                className="flex items-center bg-gradient-primary hover:opacity-90"
+              >
+                Next
+                <ArrowRight className="ml-2 h-4 w-4" />
+              </Button>
+            )}
+          </div>
+        </div>
+      </div>
+
+      {/* Cart Sidebar */}
+      <CartSidebar
+        isOpen={isCartOpen}
+        onClose={() => setIsCartOpen(false)}
+        items={cartItems}
+        onRemoveItem={removeFromCart}
+        onEditItem={(item) => {
+          toast({
+            title: "Edit Feature",
+            description: "Cart editing functionality coming soon!",
+          });
+        }}
+      />
+    </div>
+  );
+};
