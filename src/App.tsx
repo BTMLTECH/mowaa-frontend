@@ -8,8 +8,6 @@ import NotFound from "./pages/NotFound";
 import { BookingProvider } from "./hooks/BookingContext";
 import PaymentFailed from "./components/Failed";
 import PaymentSuccess from "./components/Success";
-import PaymentCallback from "./components/PaymentCallback";
-// import PaymentCallback from "./components/PaymentCallback";
 
 const queryClient = new QueryClient();
 
@@ -22,7 +20,6 @@ const App = () => (
        <BookingProvider>
         <Routes>
         <Route path="/" element={<Index />} />
-         <Route path="/payment/callback" element={<PaymentCallback />} /> 
         <Route path="/payment/success" element={<PaymentSuccess />} />
         <Route path="/payment/failed" element={<PaymentFailed />} />
           <Route path="*" element={<NotFound />} />
