@@ -3,9 +3,7 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Separator } from '@/components/ui/separator';
-import { Switch } from '@/components/ui/switch';
-import { Label } from '@/components/ui/label';
-import { X, Trash2, CreditCard, DollarSign, Edit2 } from 'lucide-react';
+import { X, Trash2, CreditCard } from 'lucide-react';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { CartItem } from './MOWAAForm';
 import { useBooking } from '@/hooks/BookingContext';
@@ -26,85 +24,88 @@ export const CartSidebar: React.FC<CartSidebarProps> = ({
   onRemoveItem,
   onEditItem,
 }) => {
-  const { formData, cartItems, error, setError } = useBooking();
-  const [showUSD, setShowUSD] = useState(false);
-  const [exchangeRate, setExchangeRate] = useState<number | null>(null);
+  const { formData, cartItems, error, setError, currency, convertPrice, exchangeRate, formatCurrency   } = useBooking();
+
   const [isLoading, setIsLoading] = useState(false);
-  // Fetch exchange rate
-  useEffect(() => {
-    api.getExchangeRate()
-      .then(data => {
-        if (data?.rate) {
-          setExchangeRate(data.rate);
-        } else {
-          setError("Failed to load exchange rate. Using fallback.");
-          setExchangeRate(1550);
+
+
+  const totalAmount = items.reduce((sum, item) => sum + convertPrice(item.price, currency), 0);
+  
+
+ 
+const handlePayment = async (currency) => {
+  try {
+    if (!exchangeRate) {
+      setError("Exchange rate not loaded. Please try again.");
+      return;
+    }
+
+    // normalize services etc.
+    const normalizedFormData = {
+      ...formData,
+      services: Array.isArray(formData.services)
+        ? formData.services
+        : Object.values(formData.services),
+    };
+
+    const convertedCartItems = cartItems.map(item => ({
+      ...item,
+      price: convertPrice(item.price, currency),
+    }));
+    const totalAmountToSend = convertedCartItems.reduce((sum, i) => sum + i.price, 0);
+
+    // Build payload object (but remove File objects before JSON.stringify)
+    const payloadForJson = {
+      formData: {
+        ...normalizedFormData,
+        entryIntoNigeria: {
+          // include text fields only
+          travelDocument: normalizedFormData.entryIntoNigeria.travelDocument,
+          otherDocumentDetails: normalizedFormData.entryIntoNigeria.otherDocumentDetails || '',
         }
-      })
-      .catch(err => {
-        console.error("Failed to fetch exchange rate:", err);
-        setError("Could not fetch exchange rate. Using fallback.");
-        setExchangeRate(1550);
-      });
-  }, []);
+      },
+      cartItems: convertedCartItems,
+      totalAmount: totalAmountToSend,
+      currency,
+    };
 
-  // Convert individual item price based on selected currency
-  const convertPrice = (price: number, currency: 'NGN' | 'USD') => {
-    if (currency === 'USD' && exchangeRate) {
-      return parseFloat((price / exchangeRate).toFixed(2));
+    // Build FormData
+    const fd = new FormData();
+    fd.append('data', JSON.stringify(payloadForJson));
+
+    // Append files (only if they are real File objects)
+    const passportScan = normalizedFormData.entryIntoNigeria.passportScan;
+    const passportPhoto = normalizedFormData.entryIntoNigeria.passportPhoto;
+    const flightProof = normalizedFormData.entryIntoNigeria.flightProof;
+
+    if (passportScan instanceof File) {
+      fd.append('passportScan', passportScan, passportScan.name);
     }
-    return price;
-  };
-
-  // Format currency for display
-  const formatCurrency = (amount: number, currency: 'NGN' | 'USD') => {
-    if (currency === 'NGN') return `₦${amount.toLocaleString()}`;
-    return `$${amount.toFixed(2)}`;
-  };
-
-  // Calculate totals based on selected currency
-  const totalAmount = items.reduce((sum, item) => sum + convertPrice(item.price, showUSD ? 'USD' : 'NGN'), 0);
-
-  // Handle payment
-  const handlePayment = async (currency: 'NGN' | 'USD') => {
-    try {
-      if (!exchangeRate) {
-        setError("Exchange rate not loaded. Please try again.");
-        return;
-      }
-
-      const normalizedFormData = {
-        ...formData,
-        services: Array.isArray(formData.services)
-          ? formData.services
-          : Object.values(formData.services),
-      };
-
-      // Convert all cart items to selected currency
-      const convertedCartItems = cartItems.map(item => ({
-        ...item,
-        price: convertPrice(item.price, currency),
-      }));
-
-      const totalAmountToSend = convertedCartItems.reduce((sum, item) => sum + item.price, 0);
-
-      const data = await api.initiatePayment({
-        formData: normalizedFormData,
-        cartItems: convertedCartItems,
-        totalAmount: totalAmountToSend,
-        currency,
-      });
-
-      if (data.url) {
-        window.location.href = data.url;
-      } else {
-        setError("Failed to start payment. Please try again.");
-      }
-    } catch (err) {
-      console.error("Payment error:", err);
-      setError("Payment request failed. Please check your connection.");
+    if (passportPhoto instanceof File) {
+      fd.append('passportPhoto', passportPhoto, passportPhoto.name);
     }
-  };
+    if (flightProof instanceof File) {
+      fd.append('flightProof', flightProof, flightProof.name);
+    }
+
+    for (const pair of fd.entries()) {
+    
+    }
+
+    // send FormData to API
+    const data = await api.initiatePayment(fd); // pass FormData directly
+
+    if (data.url) {
+      window.location.href = data.url;
+    } else {
+      setError("Failed to start payment. Please try again.");
+    }
+  } catch (err) {
+
+    setError("Payment request failed. Please check your connection.");
+  }
+};
+
 
   if (!isOpen) return null;
 
@@ -125,31 +126,7 @@ export const CartSidebar: React.FC<CartSidebarProps> = ({
         <div className="flex-1 overflow-hidden">
           <ScrollArea className="h-full">
             <div className="p-6">
-              {/* Currency Toggle */}
-              <Card className="mb-6">
-                <CardContent className="p-4">
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center space-x-2">
-                      <DollarSign className="h-4 w-4 text-muted-foreground" />
-                      <Label htmlFor="currency-toggle" className="text-sm font-medium">
-                        Show USD equivalent
-                      </Label>
-                    </div>
-                    <Switch
-                      id="currency-toggle"
-                      checked={showUSD}
-                      onCheckedChange={setShowUSD}
-                    />
-                  </div>
-                  <div className="mt-3 text-xs text-muted-foreground">
-                    {exchangeRate
-                      ? `Exchange rate: ₦${exchangeRate.toLocaleString()} = $1`
-                      : 'Loading exchange rate...'}
-                  </div>
-                </CardContent>
-              </Card>
-
-              {/* Cart Items */}
+             
               {items.length === 0 ? (
                 <div className="text-center py-12">
                   <div className="text-muted-foreground mb-4">
@@ -173,21 +150,12 @@ export const CartSidebar: React.FC<CartSidebarProps> = ({
                               )}
                               <div className="mt-2">
                                 <p className="font-semibold text-sm">
-                                  {formatCurrency(convertPrice(item.price, showUSD ? 'USD' : 'NGN'), showUSD ? 'USD' : 'NGN')}
+                                  {formatCurrency(convertPrice(item.price, currency ), currency )}
                                 </p>
                               </div>
                             </div>
                             <div className="flex gap-1">
-                              {onEditItem && (
-                                <Button
-                                  variant="ghost"
-                                  size="sm"
-                                  onClick={() => onEditItem(item)}
-                                  className="text-primary hover:text-primary/80"
-                                >
-                                  <Edit2 className="h-3 w-3" />
-                                </Button>
-                              )}
+                          
                               <Button
                                 variant="ghost"
                                 size="sm"
@@ -212,7 +180,7 @@ export const CartSidebar: React.FC<CartSidebarProps> = ({
                         <span className="font-semibold">Total</span>
                         <div className="text-right">
                           <p className="font-bold text-lg">
-                            {formatCurrency(totalAmount, showUSD ? 'USD' : 'NGN')}
+                            {formatCurrency(totalAmount, currency)}
                           </p>
                         </div>
                       </div>
@@ -229,9 +197,9 @@ export const CartSidebar: React.FC<CartSidebarProps> = ({
 
   <Button
     onClick={async () => {
-      setIsLoading(true);  // start loader
-      await handlePayment(showUSD ? 'USD' : 'NGN');
-      setIsLoading(false); // will only reset if payment fails
+      setIsLoading(true); 
+      await handlePayment(currency);
+      setIsLoading(false);
     }}
     className="w-full bg-gradient-primary hover:opacity-90 flex justify-center items-center"
     size="lg"
@@ -261,7 +229,7 @@ export const CartSidebar: React.FC<CartSidebarProps> = ({
     ) : (
       <CreditCard className="mr-2 h-5 w-5" />
     )}
-    {isLoading ? 'Processing...' : `Pay ${formatCurrency(totalAmount, showUSD ? 'USD' : 'NGN')}`}
+    {isLoading ? 'Processing...' : `Pay ${formatCurrency(totalAmount, currency)}`}
   </Button>
 </div>
 

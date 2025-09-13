@@ -29,7 +29,6 @@ const PaymentSuccess: React.FC = () => {
       setError("Payment could not be verified.");
     }
   } catch (err) {
-    console.error("Verify error:", err);
     setError("Error verifying payment.");
   } finally {
     setLoading(false);

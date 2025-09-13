@@ -1,13 +1,10 @@
-// src/lib/api.ts
-// const API_BASE = "http://localhost:5000/api";
 const API_BASE = import.meta.env.VITE_API_BASE;
 
 export const api = {
-  initiatePayment: async (payload: any) => {
+  initiatePayment: async (payload: FormData) => {
     const res = await fetch(`${API_BASE}/initiate-payment`, {
       method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(payload),
+      body: payload,
     });
     return res.json();
   },

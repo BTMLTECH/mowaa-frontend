@@ -3,11 +3,12 @@ import { Label } from '@/components/ui/label';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Plus } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { CartItem } from '../MOWAAForm';
+import { useBooking } from '@/hooks/BookingContext';
 
 interface HotelAccommodationSectionProps {
   hotelData: string;
@@ -59,6 +60,8 @@ export const HotelAccommodationSection: React.FC<HotelAccommodationSectionProps>
   const [selectedRooms, setSelectedRooms] = useState(roomsData);
   const { toast } = useToast();
 
+  const { currency, convertPrice, formatCurrency } = useBooking();
+
   const handleHotelChange = (hotel: string) => {
     setSelectedHotel(hotel);
     setSelectedRoomType(''); // Reset room type when hotel changes
@@ -95,11 +98,11 @@ export const HotelAccommodationSection: React.FC<HotelAccommodationSectionProps>
     const room = roomOptions.find(r => r.id === selectedRoomType);
     
     if (hotel && room) {
-      const totalPrice = room.price * parseInt(selectedNights) * parseInt(selectedRooms);
+      const totalPrice = room.price * parseInt(selectedNights) * parseInt(selectedRooms); // stored in NGN
       const cartItem: CartItem = {
         id: `${selectedHotel}_${selectedRoomType}_${selectedNights}_${selectedRooms}`,
         name: `${hotel.name} - ${room.name}`,
-        price: totalPrice,
+        price: totalPrice, // always NGN
         category: 'Accommodation',
         details: `${selectedNights} night(s), ${selectedRooms} room(s)`
       };
@@ -156,7 +159,10 @@ export const HotelAccommodationSection: React.FC<HotelAccommodationSectionProps>
                             {room.name}
                           </Label>
                           <Badge variant="secondary" className="ml-2">
-                            ₦{room.price.toLocaleString()} per night
+                            {formatCurrency(
+                              convertPrice(room.price, currency),
+                              currency
+                            )} per night
                           </Badge>
                         </div>
                       </div>

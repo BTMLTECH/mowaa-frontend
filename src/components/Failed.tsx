@@ -20,7 +20,7 @@ useEffect(() => {
         }
       })
       .catch((err) => {
-        console.error("Verify error:", err);
+     
       })
       .finally(() => setLoading(false));
   } else {

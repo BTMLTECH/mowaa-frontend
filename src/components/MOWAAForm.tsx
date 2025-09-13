@@ -12,6 +12,7 @@ import { CartSidebar } from './CartSidebar';
 import { useToast } from '@/hooks/use-toast';
 import { ShoppingCart, ArrowLeft, ArrowRight, Send } from 'lucide-react';
 import { useBooking } from '@/hooks/BookingContext';
+import { EntryIntoNigeriaSection } from './form-sections/EntryIntoNigeriaSection';
 
 export interface CartItem {
   id: string;
@@ -27,6 +28,13 @@ export interface FormDatas {
     email: string;
     phone: string;
   };
+    entryIntoNigeria: {          
+    travelDocument: string,
+    otherDocumentDetails: string,
+     passportScan: File | null;
+    passportPhoto: File | null;
+    flightProof: File | null;
+  },
   travelInfo: {
     arrivalDate: string;
     airline: string;
@@ -47,19 +55,27 @@ export interface FormDatas {
 }
 
 const sections = [
-  { id: 'personal', title: 'Personal Information', description: 'Your basic details' },
-  { id: 'travel', title: 'Travel Information', description: 'Flight and travel details' },
-  { id: 'services', title: 'Service Request', description: 'Select your services' },
-  { id: 'hotel', title: 'Hotel & Accommodation', description: 'Choose your stay' },
-  { id: 'additional', title: 'Additional Information', description: 'Final details' }
+  { id: 'personal', title: 'Personal Information', description: 'Provide your personal details' },
+  { id: 'entry', title: 'Entry into Nigeria', description: 'Upload your travel documents' }, 
+  { id: 'travel', title: 'Travel Information', description: 'Your travel details' },
+  { id: 'services', title: 'Service Request', description: 'Select services you want' },
+  { id: 'hotel', title: 'Hotel & Accommodation', description: 'Choose your hotel and room' },
+  { id: 'additional', title: 'Additional Information', description: 'Other important details' },
+];
+
+
+const beninHotels = [
+  { id: 'oti', name: 'OTI Hotel', price: 100000 },
+  { id: 'protea', name: 'Protea Hotel', price: 180000 }
 ];
 
 export const MOWAAForm: React.FC = () => {
-  const { formData, setFormData, cartItems, setCartItems } = useBooking();
+  const { formData, setFormData, cartItems, setCartItems, currency, setCurrency, formatCurrency, convertPrice, exchangeRate } = useBooking();
   const [currentSection, setCurrentSection] = useState(0);
   const [isCartOpen, setIsCartOpen] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const { toast } = useToast();
+
 
   const addToCart = (item: CartItem) => {
     if (!item) return;
@@ -90,18 +106,39 @@ export const MOWAAForm: React.FC = () => {
 const validateSection = () => {
   switch (currentSection) {
     case 0: // personal info
-      return formData.personalInfo.name && formData.personalInfo.email && formData.personalInfo.phone;
-    case 1: // travel info
-      return (
-        formData.travelInfo.arrivalDate &&
-        formData.travelInfo.departureDate &&
-        formData.travelInfo.airline &&
-        formData.travelInfo.flightNumber
+      return !!(
+        formData.personalInfo.name?.trim() &&
+        formData.personalInfo.email?.trim() &&
+        formData.personalInfo.phone?.trim()
       );
+
+    case 1: // entry into Nigeria
+      return !!(
+        formData.entryIntoNigeria.travelDocument?.trim() &&
+        (
+          formData.entryIntoNigeria.travelDocument !== "Other" ||
+          formData.entryIntoNigeria.otherDocumentDetails?.trim()
+        ) &&
+        formData.entryIntoNigeria.passportScan instanceof File &&
+        formData.entryIntoNigeria.passportPhoto instanceof File &&
+        formData.entryIntoNigeria.flightProof instanceof File
+      );
+
+    case 2: // travel info
+      return !!(
+        formData.travelInfo.arrivalDate?.trim() &&
+        formData.travelInfo.departureDate?.trim() &&
+        formData.travelInfo.airline?.trim() &&
+        formData.travelInfo.flightNumber?.trim()
+      );
+
+    // Add others as needed
+
     default:
-      return true; // all other sections are considered valid
+      return true;
   }
 };
+
 
 
   const nextSection = () => {
@@ -136,128 +173,216 @@ const validateSection = () => {
     }
   };
 
-  const renderCurrentSection = () => {
-    switch (currentSection) {
-      case 0:
-        return (
-          <PersonalInfoSection
-            data={formData.personalInfo}
-            onUpdate={(data) => updateFormData('personalInfo', data)}
-          />
-        );
+    const renderCurrentSection = () => {
+      switch (currentSection) {
+        case 0:
+          return (
+            <PersonalInfoSection
+              data={formData.personalInfo}
+              onUpdate={(data) => updateFormData('personalInfo', data)}
+            />
+          );
+
       case 1:
-        return (
-          <TravelInfoSection
-            data={formData.travelInfo}
-            onUpdate={(data) => updateFormData('travelInfo', data)}
-          />
-        );
-      case 2:
-        return (
-          <ServiceRequestSection
-            data={formData.services}
-            onUpdate={(data) => updateFormData('services', data)}
-            onAddToCart={addToCart}
-          />
-        );
-      case 3:
-        return (
-          <HotelAccommodationSection
-            hotelData={formData.hotel}
-            roomTypeData={formData.roomType}
-            nightsData={formData.numberOfNights}
-            roomsData={formData.numberOfRooms}
-            onUpdate={updateFormData}
-            onAddToCart={addToCart}
-          />
-        );
-      case 4:
-        return (
-          <AdditionalInfoSection
-            stayInBenin={formData.stayInBenin}
-            beninDuration={formData.beninDuration}
-            comments={formData.comments}
-            onUpdate={updateFormData}
-          />
-        );
-      default:
-        return null;
-    }
-  };
+      return (
+        <EntryIntoNigeriaSection
+          data={formData.entryIntoNigeria}
+          onUpdate={(updatedData) => {
+            setFormData((prev) => ({
+              ...prev,
+              entryIntoNigeria: {
+                ...prev.entryIntoNigeria,
+                ...updatedData,
+              },
+            }));
+          }}
+        />
+      );
+
+
+        case 2:
+          return (
+            <TravelInfoSection
+              data={formData.travelInfo}
+              onUpdate={(data) => updateFormData('travelInfo', data)}
+            />
+          );
+
+        case 3:
+          return (
+            <ServiceRequestSection
+              data={formData.services}
+              onUpdate={(data) => updateFormData('services', data)}
+              onAddToCart={addToCart}
+            />
+          );
+
+        case 4:
+          return (
+            <HotelAccommodationSection
+              hotelData={formData.hotel}
+              roomTypeData={formData.roomType}
+              nightsData={formData.numberOfNights}
+              roomsData={formData.numberOfRooms}
+              onUpdate={updateFormData}
+              onAddToCart={addToCart}
+            />
+          );
+
+        case 5:
+          return (
+            <AdditionalInfoSection
+              stayInBenin={formData.stayInBenin}
+              beninDuration={formData.beninDuration}
+              comments={formData.comments}
+              onUpdate={updateFormData}  
+              currency={currency}           
+              exchangeRate={exchangeRate} 
+              onAddToCart={addToCart}
+              convertPrice={convertPrice}
+              formatCurrency={formatCurrency}
+            />
+          );
+
+        default:
+          return null;
+      }
+    };
 
   return (
     <div className="min-h-screen bg-background">
       {/* Header */}
-      <div className="bg-gradient-hero text-white py-8">
-        <div className="container mx-auto px-4">
-          <div className="flex items-center justify-between">
-            <div>
-              <h1 className="text-3xl md:text-4xl font-bold mb-2">
-                MOWAA OPENING - NIGERIA VISIT
-              </h1>
-              <p className="text-lg opacity-90">November 2025</p>
-            </div>
+     <div className="bg-gradient-hero text-white py-8">
+      <div className="container mx-auto px-4">
+        <div className="flex items-center justify-between">
+          {/* Title */}
+          <div>
+            <h1 className="text-3xl md:text-4xl font-bold mb-2">
+              MOWAA OPENING - NIGERIA VISIT
+            </h1>
+            <p className="text-lg opacity-90">November 2025</p>
+          </div>
+
+          {/* Cart + Currency Switcher */}
+          <div className="flex flex-col items-end space-y-3">
+            {/* Cart button */}
             <Button
               variant="outline"
               size="lg"
               onClick={() => setIsCartOpen(true)}
-              className="bg-white/10 border-white/30 text-white hover:bg-white/20"
+              className="bg-white/10 border-white/30 text-white hover:bg-white/20 shadow-lg rounded-xl"
             >
               <ShoppingCart className="mr-2 h-5 w-5" />
               Cart ({cartItems.length})
             </Button>
+
+            {/* iOS-like currency switcher with text inside */}
+          <button
+        onClick={() => setCurrency(currency === "NGN" ? "USD" : "NGN")}
+        className={`
+          relative w-24 h-9 rounded-full flex items-center
+          transition-colors duration-300 ease-in-out
+          bg-white/20 border border-white/30
+          shadow-md overflow-hidden
+        `}
+      >
+        {/* Sliding background */}
+        <span
+          className={`
+            absolute top-0 left-0 w-1/2 h-full rounded-full
+            bg-white text-black flex items-center justify-center text-sm font-semibold
+            transform transition-transform duration-300
+            ${currency === "USD" ? "translate-x-full" : ""}
+          `}
+        >
+          {currency === "NGN" ? "₦" : "$"}
+        </span>
+
+        {/* Static labels (dimmed behind) */}
+        <div className="absolute inset-0 flex items-center justify-between px-3 text-xs font-semibold">
+          <span
+            className={`transition-colors duration-300 ${
+              currency === "NGN" ? "text-white" : "text-white"
+            }`}
+          >
+            NGN
+          </span>
+          <span
+            className={`transition-colors duration-300 ${
+              currency === "USD" ? "text-white" : "text-white"
+            }`}
+          >
+            USD
+          </span>
+        </div>
+      </button>
+
+            {/* Exchange rate under toggle */}
+            {exchangeRate && (
+              <p className="text-xs text-white italic">
+                1 USD ≈ ₦{exchangeRate.toLocaleString()}
+              </p>
+            )}
           </div>
         </div>
       </div>
+
+
+
+
+      </div>
+
 
       <div className="container mx-auto px-4 py-8">
         <div className="max-w-4xl mx-auto">
           {/* Form Progress */}
           <FormProgress currentSection={currentSection} sections={sections} />
 
-          {/* Welcome Message */}
-          <Card className="mb-8 shadow-elegant">
-            <CardContent className="p-6">
-              <p className="text-muted-foreground leading-relaxed">
-                As we draw nearer to your visit to Nigeria for MOWAA's opening in November, we would like you to provide us with the information requested via this form and also to proceed with making necessary payments which will only take about 15 minutes to enable us make relevant arrangements to ensure you have a smooth and seamless experience with your visit to Nigeria.
+        {/* Welcome Message */}
+        <Card className="mb-8 shadow-elegant">
+          <CardContent className="p-6">
+            <p className="text-muted-foreground leading-relaxed">
+              As we draw nearer to your visit to Nigeria for MOWAA's opening in November, we would like you to provide us with the information requested via this form and also to proceed with making necessary payments which will only take about 15 minutes to enable us make relevant arrangements to ensure you have a smooth and seamless experience with your visit to Nigeria.
+            </p>
+            <div className="mt-4 p-4 bg-accent/10 rounded-lg">
+              <p className="text-sm text-foreground">
+                <strong>IMPORTANT!</strong> Please note that any service or information not specified here can always be requested at{' '}
+                <a href="mailto:logistics@wearemowaa.org" className="text-primary hover:underline">
+                  logistics@wearemowaa.org
+                </a>{' '}
+                for general logistics and{' '}
+                <a href="mailto:visaenquiry@wearemowaa.org" className="text-primary hover:underline">
+                  visaenquiry@wearemowaa.org
+                </a>{' '}
+                for visa related matters.
               </p>
-              <div className="mt-4 p-4 bg-accent/10 rounded-lg">
-                <p className="text-sm text-foreground">
-                  <strong>IMPORTANT!</strong> Please note that any service or information not specified here can always be requested at{' '}
-                  <a href="mailto:logistics@wearemowaa.org" className="text-primary hover:underline">
-                    logistics@wearemowaa.org
-                  </a>{' '}
-                  for general logistics and{' '}
-                  <a href="mailto:visaenquiry@wearemowaa.org" className="text-primary hover:underline">
-                    visaenquiry@wearemowaa.org
-                  </a>{' '}
-                  for visa related matters.
-                </p>
-              </div>
-            </CardContent>
-          </Card>
+            </div>
+          </CardContent>
+        </Card>
 
-          {/* Current Section */}
-          <Card className="shadow-elegant">
-            <CardHeader className="bg-primary/5">
-              <div className="flex items-center justify-between">
-                <div>
-                  <CardTitle className="text-2xl text-primary">
-                    {sections[currentSection].title}
-                  </CardTitle>
-                  <p className="text-muted-foreground mt-1">
-                    {sections[currentSection].description}
-                  </p>
-                </div>
-                <Badge variant="secondary" className="text-sm">
-                  Section {currentSection + 1} of {sections.length}
-                </Badge>
-              </div>
-            </CardHeader>
-            <CardContent className="p-8">
-              {renderCurrentSection()}
-            </CardContent>
-          </Card>
+        {/* Current Section */}
+        <Card className="shadow-elegant w-full max-w-4xl mx-auto">
+          <CardHeader className="bg-primary/5">
+            <div className="space-y-2">
+              <CardTitle className="text-lg sm:text-xl md:text-2xl text-primary">
+                {sections[currentSection].title}
+              </CardTitle>
+              <p className="text-muted-foreground text-sm sm:text-base">
+                {sections[currentSection].description}
+              </p>
+              <Badge
+                variant="secondary"
+                className="text-xs sm:text-sm"
+              >
+                Section {currentSection + 1} of {sections.length}
+              </Badge>
+            </div>
+          </CardHeader>
+
+          <CardContent className="p-6">
+            {renderCurrentSection()}
+          </CardContent>
+        </Card>
 
           {/* Navigation */}
           <div className="flex justify-between mt-8">
@@ -293,7 +418,6 @@ const validateSection = () => {
         </div>
       </div>
 
-      {/* Cart Sidebar */}
       <CartSidebar
         isOpen={isCartOpen}
         onClose={() => setIsCartOpen(false)}

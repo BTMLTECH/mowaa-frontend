@@ -7,6 +7,7 @@ import { Badge } from '@/components/ui/badge';
 import { Plus } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { CartItem } from '../MOWAAForm';
+import { useBooking } from '@/hooks/BookingContext';
 
 interface ServiceRequestSectionProps {
   data: string[];
@@ -31,6 +32,8 @@ export const ServiceRequestSection: React.FC<ServiceRequestSectionProps> = ({
 }) => {
   const [selectedServices, setSelectedServices] = useState<string[]>(Array.isArray(data) ? data : []);
   const { toast } = useToast();
+
+  const { currency, convertPrice, formatCurrency } = useBooking();
 
   const handleServiceToggle = (serviceId: string) => {
     const newServices = selectedServices.includes(serviceId)
@@ -63,8 +66,7 @@ export const ServiceRequestSection: React.FC<ServiceRequestSectionProps> = ({
           Please choose your preferred service(s) *
         </Label>
         <p className="text-sm text-muted-foreground mb-6">
-          This includes but not limited to all relevant services to ensure a smooth stay. 
-          Please note that the USD conversion rate is ₦1,550 to $1
+          This includes but not limited to all relevant services to ensure a smooth stay.
         </p>
 
         <div className="space-y-4">
@@ -84,7 +86,12 @@ export const ServiceRequestSection: React.FC<ServiceRequestSectionProps> = ({
                     </Label>
                     <div className="flex items-center justify-between mt-2">
                       <Badge variant="secondary" className="text-xs">
-                        {service.price === 0 ? 'Price varies' : `₦${service.price.toLocaleString()}`}
+                        {service.price === 0
+                          ? 'Price varies'
+                          : formatCurrency(
+                              convertPrice(service.price, currency),
+                              currency
+                            )}
                       </Badge>
                       <Button
                         variant="outline"

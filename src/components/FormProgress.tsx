@@ -16,7 +16,8 @@ interface FormProgressProps {
 export const FormProgress: React.FC<FormProgressProps> = ({ currentSection, sections }) => {
   return (
     <div className="mb-8">
-      <div className="flex items-center justify-between mb-4">
+      {/* Desktop Progress Bar */}
+      <div className="hidden md:flex items-center justify-between mb-4">
         {sections.map((section, index) => (
           <div key={section.id} className="flex items-center flex-1">
             <div className="flex items-center">
@@ -30,13 +31,9 @@ export const FormProgress: React.FC<FormProgressProps> = ({ currentSection, sect
                     : "bg-muted text-muted-foreground"
                 )}
               >
-                {index < currentSection ? (
-                  <Check className="h-5 w-5" />
-                ) : (
-                  index + 1
-                )}
+                {index < currentSection ? <Check className="h-5 w-5" /> : index + 1}
               </div>
-              <div className="ml-3 hidden md:block">
+              <div className="ml-3">
                 <h3
                   className={cn(
                     "text-sm font-medium",
@@ -58,14 +55,14 @@ export const FormProgress: React.FC<FormProgressProps> = ({ currentSection, sect
           </div>
         ))}
       </div>
-      
-      {/* Mobile section title */}
+
+      {/* Mobile Section Title */}
       <div className="md:hidden text-center">
         <h3 className="text-lg font-medium text-foreground">
-          {sections[currentSection].title}
+          {sections[currentSection]?.title || ""}
         </h3>
         <p className="text-sm text-muted-foreground">
-          {sections[currentSection].description}
+          {sections[currentSection]?.description || ""}
         </p>
       </div>
     </div>

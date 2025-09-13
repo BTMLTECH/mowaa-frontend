@@ -5,21 +5,64 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Textarea } from '@/components/ui/textarea';
 import { Card, CardContent } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
+import { Button } from '@/components/ui/button';
+import { CartItem } from '../MOWAAForm';
+import { useToast } from '@/hooks/use-toast';
 
 interface AdditionalInfoSectionProps {
   stayInBenin: string;
   beninDuration: string;
   comments: string;
   onUpdate: (section: string, data: any) => void;
+  currency: 'NGN' | 'USD';
+  exchangeRate: number | null;
+  onAddToCart: (item: CartItem) => void;
+  convertPrice: (amount: number, currency: 'NGN' | 'USD') => number;
+  formatCurrency: (amount: number, currency: 'NGN' | 'USD') => string;
 }
+
+const hotelsInBenin = [
+  { id: 'oti', name: 'OTI Hotel', price: 100000 },
+  { id: 'protea', name: 'Protea Hotel', price: 180000 }
+];
 
 export const AdditionalInfoSection: React.FC<AdditionalInfoSectionProps> = ({
   stayInBenin,
   beninDuration,
   comments,
-  onUpdate
+  onUpdate,
+  currency,
+  exchangeRate,
+  onAddToCart,
+  convertPrice,
+  formatCurrency
 }) => {
   const [customDuration, setCustomDuration] = useState('');
+  const [selectedHotel, setSelectedHotel] = useState('');
+  const { toast } = useToast();
+
+const addBeninHotelToCart = () => {
+  if (!selectedHotel || !beninDuration) return;
+
+  const hotel = hotelsInBenin.find(h => h.id === selectedHotel);
+  const days = beninDuration === 'other' ? parseInt(customDuration || '0') : parseInt(beninDuration);
+
+  if (hotel && days > 0) {
+    const totalPrice = hotel.price * days; // Store in NGN, no conversion here
+    const cartItem: CartItem = {
+      id: `${hotel.id}_${beninDuration}`,
+      name: `${hotel.name} - ${days} day(s)`,
+      price: totalPrice,
+      category: 'Accommodation',
+      details: `${days} night(s) in Benin`
+    };
+    onAddToCart(cartItem);
+    toast({
+      title: "Accommodation Added to Cart",
+      description: `${hotel.name} - ${days} day(s) has been added to your cart.`,
+    });
+  }
+};
 
   return (
     <div className="space-y-8">
@@ -35,6 +78,7 @@ export const AdditionalInfoSection: React.FC<AdditionalInfoSectionProps> = ({
             if (value === 'no') {
               onUpdate('beninDuration', '');
               setCustomDuration('');
+              setSelectedHotel('');
             }
           }}
         >
@@ -64,47 +108,80 @@ export const AdditionalInfoSection: React.FC<AdditionalInfoSectionProps> = ({
       </div>
 
       {/* Duration in Benin */}
-      {stayInBenin === 'yes' && (
-        <div>
-          <Label className="text-base font-medium mb-3 block">
-            Please specify number of days *
-          </Label>
-          <Select
-            value={beninDuration}
-            onValueChange={(value) => {
-              onUpdate('beninDuration', value);
-              if (value !== 'other') {
-                setCustomDuration('');
-              }
-            }}
-          >
-            <SelectTrigger>
-              <SelectValue placeholder="Select duration" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="1">1 day</SelectItem>
-              <SelectItem value="2">2 days</SelectItem>
-              <SelectItem value="3">3 days</SelectItem>
-              <SelectItem value="other">Other</SelectItem>
-            </SelectContent>
-          </Select>
+   {stayInBenin === 'yes' && (
+  <div>
 
-          {beninDuration === 'other' && (
-            <div className="mt-3">
-              <Input
-                type="number"
-                min={1}
-                placeholder="Enter number of days"
-                value={customDuration}
-                onChange={(e) => {
-                  setCustomDuration(e.target.value);
-                  onUpdate('beninDuration', e.target.value);
-                }}
-              />
-            </div>
-          )}
+    {/* ✅ Hotel selection FIRST */}
+    <div className="mt-4">
+      <Label className="text-base font-medium mb-3 block">Select Hotel *</Label>
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        {hotelsInBenin.map(hotel => (
+          <Card
+            key={hotel.id}
+            className={`hover:shadow-md transition-shadow cursor-pointer ${
+              selectedHotel === hotel.id ? 'border-2 border-primary' : ''
+            }`}
+            onClick={() => setSelectedHotel(hotel.id)}
+          >
+            <CardContent className="p-4 flex justify-between items-center">
+              <span>{hotel.name}</span>
+              <span className="font-semibold">
+                {formatCurrency(convertPrice(hotel.price, currency), currency)} / night
+              </span>
+            </CardContent>
+          </Card>
+        ))}
+      </div>
+    </div>
+
+    {/* ✅ Duration AFTER hotel */}
+    <div className="mt-6">
+      <Label className="text-base font-medium mb-3 block">Please specify number of days *</Label>
+      <Select
+        value={beninDuration}
+        onValueChange={(value) => {
+          onUpdate('beninDuration', value);
+          if (value !== 'other') setCustomDuration('');
+        }}
+      >
+        <SelectTrigger>
+          <SelectValue placeholder="Select duration" />
+        </SelectTrigger>
+        <SelectContent>
+          <SelectItem value="1">1 day</SelectItem>
+          <SelectItem value="2">2 days</SelectItem>
+          <SelectItem value="3">3 days</SelectItem>
+          <SelectItem value="other">Other</SelectItem>
+        </SelectContent>
+      </Select>
+
+      {beninDuration === 'other' && (
+        <div className="mt-3">
+          <Input
+            type="number"
+            min={1}
+            placeholder="Enter number of days"
+            value={customDuration}
+            onChange={(e) => {
+              setCustomDuration(e.target.value);
+              onUpdate('beninDuration', e.target.value);
+            }}
+          />
         </div>
       )}
+    </div>
+
+    {/* Add to Cart */}
+    {selectedHotel && (beninDuration || customDuration) && (
+      <div className="mt-4 flex justify-center">
+        <Button onClick={addBeninHotelToCart} className="bg-gradient-primary hover:opacity-90">
+          Add Benin Accommodation to Cart
+        </Button>
+      </div>
+    )}
+  </div>
+)}
+
 
       {/* Comments */}
       <div>
