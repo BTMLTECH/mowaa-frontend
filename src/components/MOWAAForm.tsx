@@ -155,7 +155,8 @@ export const MOWAAForm: React.FC = () => {
             formData.entryIntoNigeria.otherDocumentDetails?.trim()) &&
           formData.entryIntoNigeria.passportScan instanceof File &&
           formData.entryIntoNigeria.passportPhoto instanceof File &&
-          formData.entryIntoNigeria.flightProof instanceof File
+          formData.entryIntoNigeria.flightProof instanceof File &&
+          formData.entryIntoNigeria.signedLetter instanceof File
         );
 
       case 2: // travel info
@@ -165,8 +166,6 @@ export const MOWAAForm: React.FC = () => {
           formData.travelInfo.airline?.trim() &&
           formData.travelInfo.flightNumber?.trim()
         );
-
-      // Add others as needed
 
       default:
         return true;
@@ -308,46 +307,44 @@ export const MOWAAForm: React.FC = () => {
                 Cart ({cartItems.length})
               </Button>
 
-              {/* iOS-like currency switcher with text inside */}
-              <button
-                onClick={() => setCurrency(currency === "NGN" ? "USD" : "NGN")}
-                className={`
-          relative w-24 h-9 rounded-full flex items-center
-          transition-colors duration-300 ease-in-out
-          bg-white/20 border border-white/30
-          shadow-md overflow-hidden
-        `}
-              >
-                {/* Sliding background */}
-                <span
-                  className={`
-            absolute top-0 left-0 w-1/2 h-full rounded-full
-            bg-white text-black flex items-center justify-center text-sm font-semibold
-            transform transition-transform duration-300
-            ${currency === "USD" ? "translate-x-full" : ""}
-          `}
-                >
-                  {currency === "NGN" ? "₦" : "$"}
+              {/* Label + Switcher */}
+              <div className="flex items-center space-x-2">
+                {/* Prefix helper word */}
+                <span className="text-sm md:text-base font-medium text-white/90">
+                  Currency
                 </span>
 
-                {/* Static labels (dimmed behind) */}
-                <div className="absolute inset-0 flex items-center justify-between px-3 text-xs font-semibold">
+                {/* iOS-like currency switcher */}
+                <button
+                  onClick={() =>
+                    setCurrency(currency === "NGN" ? "USD" : "NGN")
+                  }
+                  className={`
+              relative w-24 h-9 rounded-full flex items-center
+              transition-colors duration-300 ease-in-out
+              bg-white/20 border border-white/30
+              shadow-md overflow-hidden
+            `}
+                >
+                  {/* Sliding background */}
                   <span
-                    className={`transition-colors duration-300 ${
-                      currency === "NGN" ? "text-white" : "text-white"
-                    }`}
+                    className={`
+                absolute top-0 left-0 w-1/2 h-full rounded-full
+                bg-white text-black flex items-center justify-center text-sm font-semibold
+                transform transition-transform duration-300
+                ${currency === "USD" ? "translate-x-full" : ""}
+              `}
                   >
-                    NGN
+                    {currency === "NGN" ? "₦" : "$"}
                   </span>
-                  <span
-                    className={`transition-colors duration-300 ${
-                      currency === "USD" ? "text-white" : "text-white"
-                    }`}
-                  >
-                    USD
-                  </span>
-                </div>
-              </button>
+
+                  {/* Static labels */}
+                  <div className="absolute inset-0 flex items-center justify-between px-3 text-xs font-semibold">
+                    <span>NGN</span>
+                    <span>USD</span>
+                  </div>
+                </button>
+              </div>
 
               {/* Exchange rate under toggle */}
               {exchangeRate && (

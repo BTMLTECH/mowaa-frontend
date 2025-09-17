@@ -3,6 +3,7 @@ import { Label } from "@/components/ui/label";
 import { Card, CardContent } from "@/components/ui/card";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Input } from "@/components/ui/input";
+import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
 
 interface EntryIntoNigeriaData {
@@ -48,6 +49,16 @@ export const EntryIntoNigeriaSection: React.FC<
     errors[field]
       ? "border-red-600 focus:border-red-600 focus:ring-red-600"
       : "";
+
+  // Force download handler
+  const handleDownloadTemplate = () => {
+    const link = document.createElement("a");
+    link.href = "/application-letter-template.docx"; // must be inside /public
+    link.download = "Nigerian-visa-application-letter.docx";
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+  };
 
   return (
     <div className="space-y-8">
@@ -216,13 +227,15 @@ export const EntryIntoNigeriaSection: React.FC<
           <Label className="block text-base font-medium mb-2">
             Application Letter <span className="text-red-500">*</span>
           </Label>
-          <a
-            href="/application-letter-template.docx"
-            download="Nigerian-visa-application-letter.docx"
-            className="inline-block px-4 py-2 bg-primary text-white rounded-md shadow hover:bg-primary/90"
+
+          <Button
+            type="button"
+            onClick={handleDownloadTemplate}
+            className="px-4 py-2 bg-primary text-white rounded-md shadow hover:bg-primary/90"
           >
             Download Application Letter
-          </a>
+          </Button>
+
           <p className="text-sm text-muted-foreground mt-2">
             Please download the letter, sign it, and upload the signed copy
             below.
