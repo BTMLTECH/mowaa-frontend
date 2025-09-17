@@ -1,6 +1,12 @@
 import { CartItem, FormDatas } from "@/components/MOWAAForm";
 import { api } from "@/lib/api";
-import React, { createContext, useContext, useState, ReactNode, useEffect } from "react";
+import React, {
+  createContext,
+  useContext,
+  useState,
+  ReactNode,
+  useEffect,
+} from "react";
 
 type Currency = "NGN" | "USD";
 
@@ -14,7 +20,7 @@ type BookingContextType = {
   exchangeRate: number | null;
   currency: Currency;
   setCurrency: React.Dispatch<React.SetStateAction<Currency>>;
-   convertPrice: (price: number, currency: Currency) => number;
+  convertPrice: (price: number, currency: Currency) => number;
   formatCurrency: (amount: number, currency: Currency) => string;
 };
 
@@ -23,14 +29,14 @@ const BookingContext = createContext<BookingContextType | undefined>(undefined);
 export const BookingProvider = ({ children }: { children: ReactNode }) => {
   const [formData, setFormData] = useState<FormDatas>({
     personalInfo: { name: "", email: "", phone: "" },
-    entryIntoNigeria: {       
-    travelDocument: '',
-    otherDocumentDetails: '',
-    passportScan: null,
-    passportPhoto: null,
-    flightProof: null,
- 
-  },
+    entryIntoNigeria: {
+      travelDocument: "",
+      otherDocumentDetails: "",
+      passportScan: null,
+      passportPhoto: null,
+      flightProof: null,
+      signedLetter: null,
+    },
     travelInfo: {
       arrivalDate: "",
       airline: "",
@@ -52,12 +58,13 @@ export const BookingProvider = ({ children }: { children: ReactNode }) => {
 
   const [cartItems, setCartItems] = useState<CartItem[]>([]);
   const [error, setError] = useState<string | null>(null);
-  const [currency, setCurrency] = useState<Currency>("NGN"); 
+  const [currency, setCurrency] = useState<Currency>("NGN");
   const [exchangeRate, setExchangeRate] = useState<number | null>(null);
 
-   useEffect(() => {
-    api.getExchangeRate()
-      .then(data => {
+  useEffect(() => {
+    api
+      .getExchangeRate()
+      .then((data) => {
         if (data?.rate) {
           setExchangeRate(data.rate);
         } else {
@@ -65,7 +72,7 @@ export const BookingProvider = ({ children }: { children: ReactNode }) => {
           setExchangeRate(1550);
         }
       })
-      .catch(err => {
+      .catch((err) => {
         setError("Could not fetch exchange rate. Using fallback.");
         setExchangeRate(1550);
       });
@@ -84,12 +91,21 @@ export const BookingProvider = ({ children }: { children: ReactNode }) => {
     return `$${amount.toFixed(2)}`;
   };
 
-  
-
   return (
     <BookingContext.Provider
-      value={{ formData, setFormData, cartItems, setCartItems, error, setError,  currency, setCurrency, exchangeRate, convertPrice,
-        formatCurrency }}
+      value={{
+        formData,
+        setFormData,
+        cartItems,
+        setCartItems,
+        error,
+        setError,
+        currency,
+        setCurrency,
+        exchangeRate,
+        convertPrice,
+        formatCurrency,
+      }}
     >
       {children}
     </BookingContext.Provider>

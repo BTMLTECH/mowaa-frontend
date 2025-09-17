@@ -1,3 +1,4 @@
+// src/lib/api.ts
 const API_BASE = import.meta.env.VITE_API_BASE;
 
 export const api = {
@@ -10,7 +11,9 @@ export const api = {
   },
 
   verifyPayment: async (reference: string) => {
-    const res = await fetch(`${API_BASE}/verify-payment?reference=${reference}`);
+    const res = await fetch(
+      `${API_BASE}/verify-payment?reference=${reference}`
+    );
     return res.json();
   },
 
