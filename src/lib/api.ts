@@ -1,5 +1,6 @@
 // src/lib/api.ts
-const API_BASE = import.meta.env.VITE_API_BASE;
+// const API_BASE = import.meta.env.VITE_API_BASE;
+const API_BASE = "http://localhost:5000/api";
 
 export const api = {
   initiatePayment: async (payload: FormData) => {
