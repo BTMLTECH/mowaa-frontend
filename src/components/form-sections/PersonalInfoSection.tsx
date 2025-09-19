@@ -143,10 +143,10 @@ export const PersonalInfoSection: React.FC<PersonalInfoSectionProps> = ({
           value={data.requiresVisa}
           onValueChange={(value) => {
             if (value === "no") {
-              // Clear country if user switches to "No"
-              onUpdate({ requiresVisa: value, country: undefined });
+              // Clear both requiresVisa and country
+              onUpdate({ requiresVisa: "no", country: "" });
             } else {
-              onUpdate({ requiresVisa: value });
+              onUpdate({ requiresVisa: "yes" });
             }
           }}
         >

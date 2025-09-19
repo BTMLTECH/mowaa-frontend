@@ -145,35 +145,35 @@ export const MOWAAForm: React.FC = () => {
 
   const validateSection = () => {
     switch (currentSection) {
-      case 0: // personal info
-        return !!(
-          formData.personalInfo.name?.trim() &&
-          formData.personalInfo.email?.trim() &&
-          formData.personalInfo.phone?.trim() &&
-          formData.personalInfo.requiresVisa?.trim() &&
-          formData.personalInfo.country?.trim()
-        );
+      case 0: {
+        // personal info
+        const p = formData.personalInfo;
+
+        // required fields always
+        if (
+          !p.name?.trim() ||
+          !p.email?.trim() ||
+          !p.phone?.trim() ||
+          !p.requiresVisa?.trim()
+        ) {
+          return false;
+        }
+
+        // country only required if visa = "yes"
+        if (p.requiresVisa === "yes" && !p.country?.trim()) {
+          return false;
+        }
+
+        return true;
+      }
 
       case 1: // entry into Nigeria
         return !!(
-          // formData.entryIntoNigeria.travelDocument?.trim() &&
-          // (formData.entryIntoNigeria.travelDocument !== "Other" ||
-          //   formData.entryIntoNigeria.otherDocumentDetails?.trim()) &&
-          (
-            formData.entryIntoNigeria.passportScan instanceof File &&
-            formData.entryIntoNigeria.passportPhoto instanceof File &&
-            formData.entryIntoNigeria.flightProof instanceof File &&
-            formData.entryIntoNigeria.signedLetter instanceof File
-          )
+          formData.entryIntoNigeria.passportScan instanceof File &&
+          formData.entryIntoNigeria.passportPhoto instanceof File &&
+          formData.entryIntoNigeria.flightProof instanceof File &&
+          formData.entryIntoNigeria.signedLetter instanceof File
         );
-
-      // case 2: // travel info
-      //   return !!(
-      //     formData.travelInfo.arrivalDate?.trim() &&
-      //     formData.travelInfo.departureDate?.trim() &&
-      //     formData.travelInfo.airline?.trim() &&
-      //     formData.travelInfo.flightNumber?.trim()
-      //   );
 
       case 2: // travel info
         return !!(
