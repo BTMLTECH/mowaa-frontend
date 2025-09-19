@@ -1,20 +1,49 @@
-import React, { useState } from 'react';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
+import React, { useState } from "react";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { RadioGroup, RadioGroupItem } from "../ui/radio-group";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "../ui/select";
 
 interface PersonalInfoData {
   name: string;
   email: string;
   phone: string;
+  requiresVisa: string;
+  country?: string;
 }
 
+const visaCountries = [
+  "UK",
+  "US",
+  "Italy",
+  "Germany",
+  "Russia",
+  "India",
+  "China",
+  "Norway",
+  "South Africa",
+  "France",
+];
 interface PersonalInfoSectionProps {
   data: PersonalInfoData;
   onUpdate: (data: Partial<PersonalInfoData>) => void;
 }
 
-export const PersonalInfoSection: React.FC<PersonalInfoSectionProps> = ({ data, onUpdate }) => {
-  const [errors, setErrors] = useState<{ name?: string; email?: string; phone?: string }>({});
+export const PersonalInfoSection: React.FC<PersonalInfoSectionProps> = ({
+  data,
+  onUpdate,
+}) => {
+  const [errors, setErrors] = useState<{
+    name?: string;
+    email?: string;
+    phone?: string;
+  }>({});
 
   const validateField = (field: string, value: string) => {
     let error = "";
@@ -55,7 +84,9 @@ export const PersonalInfoSection: React.FC<PersonalInfoSectionProps> = ({ data, 
           className="mt-2"
           required
         />
-        {errors.name && <p className="text-sm text-red-500 mt-1">{errors.name}</p>}
+        {errors.name && (
+          <p className="text-sm text-red-500 mt-1">{errors.name}</p>
+        )}
       </div>
 
       {/* Email */}
@@ -76,13 +107,15 @@ export const PersonalInfoSection: React.FC<PersonalInfoSectionProps> = ({ data, 
           className="mt-2"
           required
         />
-        {errors.email && <p className="text-sm text-red-500 mt-1">{errors.email}</p>}
+        {errors.email && (
+          <p className="text-sm text-red-500 mt-1">{errors.email}</p>
+        )}
       </div>
 
       {/* Phone */}
       <div>
         <Label htmlFor="phone" className="text-base font-medium">
-          Phone Number <span className="text-red-500">*</span>
+          Whatsapp Number <span className="text-red-500">*</span>
         </Label>
         <Input
           id="phone"
@@ -96,8 +129,54 @@ export const PersonalInfoSection: React.FC<PersonalInfoSectionProps> = ({ data, 
           className="mt-2"
           required
         />
-        {errors.phone && <p className="text-sm text-red-500 mt-1">{errors.phone}</p>}
+        {errors.phone && (
+          <p className="text-sm text-red-500 mt-1">{errors.phone}</p>
+        )}
       </div>
+
+      <div>
+        <Label className="text-base font-medium">
+          Do you require a Visa? <span className="text-red-500">*</span>
+        </Label>
+        <RadioGroup
+          className="mt-2 flex gap-4"
+          value={data.requiresVisa}
+          onValueChange={(value) => onUpdate({ requiresVisa: value })}
+        >
+          <div className="flex items-center gap-2">
+            <RadioGroupItem value="yes" id="visa-yes" />
+            <Label htmlFor="visa-yes">Yes</Label>
+          </div>
+          <div className="flex items-center gap-2">
+            <RadioGroupItem value="no" id="visa-no" />
+            <Label htmlFor="visa-no">No</Label>
+          </div>
+        </RadioGroup>
+      </div>
+
+      {/* ✅ Show Country selector only if Yes */}
+      {data.requiresVisa === "yes" && (
+        <div>
+          <Label className="text-base font-medium">
+            Select your country <span className="text-red-500">*</span>
+          </Label>
+          <Select
+            value={data.country || ""}
+            onValueChange={(value) => onUpdate({ country: value })}
+          >
+            <SelectTrigger className="mt-2">
+              <SelectValue placeholder="Select your country" />
+            </SelectTrigger>
+            <SelectContent>
+              {visaCountries.map((country) => (
+                <SelectItem key={country} value={country}>
+                  {country}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
+      )}
     </div>
   );
 };

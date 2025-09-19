@@ -28,7 +28,13 @@ const BookingContext = createContext<BookingContextType | undefined>(undefined);
 
 export const BookingProvider = ({ children }: { children: ReactNode }) => {
   const [formData, setFormData] = useState<FormDatas>({
-    personalInfo: { name: "", email: "", phone: "" },
+    personalInfo: {
+      name: "",
+      email: "",
+      phone: "",
+      requiresVisa: "",
+      country: "",
+    },
     entryIntoNigeria: {
       travelDocument: "",
       otherDocumentDetails: "",
@@ -38,21 +44,26 @@ export const BookingProvider = ({ children }: { children: ReactNode }) => {
       signedLetter: null,
     },
     travelInfo: {
-      arrivalDate: "",
-      airline: "",
-      flightNumber: "",
-      departureTime: "",
-      arrivalTime: "",
-      departureDate: "",
-      departureTimeFromLagos: "",
+      // 1. Arrival in Lagos
+      arrivalLagosDate: "",
+      arrivalLagosTime: "",
+      arrivalLagosAirline: "",
+      arrivalLagosFlight: "",
+
+      // 2. Departure from Lagos
+      departureLagosDate: "",
+      departureLagosTime: "",
+      departureLagosAirline: "",
+      departureLagosFlight: "",
+
+      // 3. Arrival in Benin
+      arrivalBeninDate: "",
+
+      // 4. Departure from Benin
+      departureBeninDate: "",
     },
     services: [],
     hotel: "",
-    roomType: "",
-    numberOfNights: "",
-    numberOfRooms: "",
-    stayInBenin: "",
-    beninDuration: "",
     comments: "",
   });
 

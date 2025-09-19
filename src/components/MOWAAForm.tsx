@@ -5,7 +5,7 @@ import { Badge } from "@/components/ui/badge";
 import { PersonalInfoSection } from "./form-sections/PersonalInfoSection";
 import { TravelInfoSection } from "./form-sections/TravelInfoSection";
 import { ServiceRequestSection } from "./form-sections/ServiceRequestSection";
-import { HotelAccommodationSection } from "./form-sections/HotelAccommodationSection";
+// import { HotelAccommodationSection } from "./form-sections/HotelAccommodationSection";
 import { AdditionalInfoSection } from "./form-sections/AdditionalInfoSection";
 import { FormProgress } from "./FormProgress";
 import { CartSidebar } from "./CartSidebar";
@@ -13,6 +13,7 @@ import { useToast } from "@/hooks/use-toast";
 import { ShoppingCart, ArrowLeft, ArrowRight, Send } from "lucide-react";
 import { useBooking } from "@/hooks/BookingContext";
 import { EntryIntoNigeriaSection } from "./form-sections/EntryIntoNigeriaSection";
+import { LagosAccommodationSection } from "./form-sections/LagosAccommodationSection";
 
 export interface CartItem {
   id: string;
@@ -27,6 +28,8 @@ export interface FormDatas {
     name: string;
     email: string;
     phone: string;
+    requiresVisa: string;
+    country?: string;
   };
   entryIntoNigeria: {
     travelDocument: string;
@@ -37,21 +40,26 @@ export interface FormDatas {
     signedLetter: File | null;
   };
   travelInfo: {
-    arrivalDate: string;
-    airline: string;
-    flightNumber: string;
-    departureTime: string;
-    arrivalTime: string;
-    departureDate: string;
-    departureTimeFromLagos: string;
+    // 1. Arrival in Lagos
+    arrivalLagosDate: string;
+    arrivalLagosTime: string;
+    arrivalLagosAirline: string;
+    arrivalLagosFlight: string;
+
+    // 2. Departure from Lagos
+    departureLagosDate: string;
+    departureLagosTime: string;
+    departureLagosAirline: string;
+    departureLagosFlight: string;
+
+    // 3. Arrival in Benin
+    arrivalBeninDate: string;
+
+    // 4. Departure from Benin
+    departureBeninDate: string;
   };
   services: string[];
   hotel: string;
-  roomType: string;
-  numberOfNights: string;
-  numberOfRooms: string;
-  stayInBenin: string;
-  beninDuration: string;
   comments: string;
 }
 
@@ -71,26 +79,23 @@ const sections = [
     title: "Travel Information",
     description: "Your travel details",
   },
-  {
-    id: "services",
-    title: "Service Request",
-    description: "Select services you want",
-  },
+
   {
     id: "hotel",
     title: "Hotel & Accommodation",
     description: "Choose your hotel and room",
   },
   {
+    id: "services",
+    title: "Service Request",
+    description: "Select services you want",
+  },
+
+  {
     id: "additional",
     title: "Additional Information",
     description: "Other important details",
   },
-];
-
-const beninHotels = [
-  { id: "oti", name: "OTI Hotel", price: 100000 },
-  { id: "protea", name: "Protea Hotel", price: 180000 },
 ];
 
 export const MOWAAForm: React.FC = () => {
@@ -101,8 +106,7 @@ export const MOWAAForm: React.FC = () => {
     setCartItems,
     currency,
     setCurrency,
-    formatCurrency,
-    convertPrice,
+
     exchangeRate,
   } = useBooking();
   const [currentSection, setCurrentSection] = useState(0);
@@ -145,27 +149,48 @@ export const MOWAAForm: React.FC = () => {
         return !!(
           formData.personalInfo.name?.trim() &&
           formData.personalInfo.email?.trim() &&
-          formData.personalInfo.phone?.trim()
+          formData.personalInfo.phone?.trim() &&
+          formData.personalInfo.requiresVisa?.trim() &&
+          formData.personalInfo.country?.trim()
         );
 
       case 1: // entry into Nigeria
         return !!(
-          formData.entryIntoNigeria.travelDocument?.trim() &&
-          (formData.entryIntoNigeria.travelDocument !== "Other" ||
-            formData.entryIntoNigeria.otherDocumentDetails?.trim()) &&
-          formData.entryIntoNigeria.passportScan instanceof File &&
-          formData.entryIntoNigeria.passportPhoto instanceof File &&
-          formData.entryIntoNigeria.flightProof instanceof File &&
-          formData.entryIntoNigeria.signedLetter instanceof File
+          // formData.entryIntoNigeria.travelDocument?.trim() &&
+          // (formData.entryIntoNigeria.travelDocument !== "Other" ||
+          //   formData.entryIntoNigeria.otherDocumentDetails?.trim()) &&
+          (
+            formData.entryIntoNigeria.passportScan instanceof File &&
+            formData.entryIntoNigeria.passportPhoto instanceof File &&
+            formData.entryIntoNigeria.flightProof instanceof File &&
+            formData.entryIntoNigeria.signedLetter instanceof File
+          )
         );
+
+      // case 2: // travel info
+      //   return !!(
+      //     formData.travelInfo.arrivalDate?.trim() &&
+      //     formData.travelInfo.departureDate?.trim() &&
+      //     formData.travelInfo.airline?.trim() &&
+      //     formData.travelInfo.flightNumber?.trim()
+      //   );
 
       case 2: // travel info
         return !!(
-          formData.travelInfo.arrivalDate?.trim() &&
-          formData.travelInfo.departureDate?.trim() &&
-          formData.travelInfo.airline?.trim() &&
-          formData.travelInfo.flightNumber?.trim()
+          formData.travelInfo.arrivalLagosDate?.trim() &&
+          formData.travelInfo.arrivalLagosTime?.trim() &&
+          formData.travelInfo.arrivalLagosAirline?.trim() &&
+          formData.travelInfo.arrivalLagosFlight?.trim() &&
+          formData.travelInfo.departureLagosDate?.trim() &&
+          formData.travelInfo.departureLagosTime?.trim() &&
+          formData.travelInfo.departureLagosAirline?.trim() &&
+          formData.travelInfo.departureLagosFlight?.trim() &&
+          formData.travelInfo.arrivalBeninDate?.trim() &&
+          formData.travelInfo.departureBeninDate?.trim()
         );
+
+      case 3: // Lagos Accommodation
+        return !!formData.hotel?.trim();
 
       default:
         return true;
@@ -181,6 +206,15 @@ export const MOWAAForm: React.FC = () => {
       });
       return;
     }
+
+    if (
+      sections[currentSection].id === "personal" &&
+      formData.personalInfo?.requiresVisa === "no"
+    ) {
+      setCurrentSection(sections.findIndex((s) => s.id === "services"));
+      return;
+    }
+
     if (currentSection < sections.length - 1) {
       setCurrentSection(currentSection + 1);
     }
@@ -200,6 +234,16 @@ export const MOWAAForm: React.FC = () => {
   };
 
   const prevSection = () => {
+    // ✅ If visa = "no" and we are on "services" (section 4), go straight back to "personal"
+    if (
+      sections[currentSection].id === "services" &&
+      formData.personalInfo?.requiresVisa === "no"
+    ) {
+      setCurrentSection(sections.findIndex((s) => s.id === "personal"));
+      return;
+    }
+
+    // Default behavior
     if (currentSection > 0) {
       setCurrentSection(currentSection - 1);
     }
@@ -241,37 +285,35 @@ export const MOWAAForm: React.FC = () => {
 
       case 3:
         return (
-          <ServiceRequestSection
-            data={formData.services}
-            onUpdate={(data) => updateFormData("services", data)}
-            onAddToCart={addToCart}
+          <LagosAccommodationSection
+            hotel={formData.hotel}
+            onUpdate={(data) => updateFormData("hotel", data.hotel)}
           />
         );
 
       case 4:
         return (
-          <HotelAccommodationSection
-            hotelData={formData.hotel}
-            roomTypeData={formData.roomType}
-            nightsData={formData.numberOfNights}
-            roomsData={formData.numberOfRooms}
-            onUpdate={updateFormData}
+          <ServiceRequestSection
+            data={formData.services}
+            onUpdate={(data) => updateFormData("services", data)}
             onAddToCart={addToCart}
+            exchangeRate={exchangeRate}
+            applicantCountry={formData.personalInfo.country}
           />
         );
 
       case 5:
         return (
           <AdditionalInfoSection
-            stayInBenin={formData.stayInBenin}
-            beninDuration={formData.beninDuration}
+            // stayInBenin={formData.stayInBenin}
+            // beninDuration={formData.beninDuration}
             comments={formData.comments}
             onUpdate={updateFormData}
-            currency={currency}
-            exchangeRate={exchangeRate}
-            onAddToCart={addToCart}
-            convertPrice={convertPrice}
-            formatCurrency={formatCurrency}
+            // currency={currency}
+            // exchangeRate={exchangeRate}
+            // onAddToCart={addToCart}
+            // convertPrice={convertPrice}
+            // formatCurrency={formatCurrency}
           />
         );
 
