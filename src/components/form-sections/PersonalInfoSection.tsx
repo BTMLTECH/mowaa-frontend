@@ -141,7 +141,14 @@ export const PersonalInfoSection: React.FC<PersonalInfoSectionProps> = ({
         <RadioGroup
           className="mt-2 flex gap-4"
           value={data.requiresVisa}
-          onValueChange={(value) => onUpdate({ requiresVisa: value })}
+          onValueChange={(value) => {
+            if (value === "no") {
+              // Clear country if user switches to "No"
+              onUpdate({ requiresVisa: value, country: undefined });
+            } else {
+              onUpdate({ requiresVisa: value });
+            }
+          }}
         >
           <div className="flex items-center gap-2">
             <RadioGroupItem value="yes" id="visa-yes" />
